@@ -97,7 +97,6 @@ linters:
     - tagliatelle
     - testableexamples
     - testifylint
-    - testpackage
     - thelper
     - tparallel
     - unconvert
@@ -113,14 +112,16 @@ linters:
   disable:
     - wsl
     - wrapcheck
+    - testpackage
   settings:
     nlreturn:
-      block-size: 2
+      block-size: 3
     depguard:
       rules:
         main:
           allow:
             - github.com/RenZorRUS/todo-backend
+            - github.com/stretchr/testify
             - github.com/joho/godotenv
             - github.com/rs/zerolog
             - $gostd
@@ -131,7 +132,7 @@ linters:
     wsl_v5:
       allow-first-in-block: true
       allow-whole-block: false
-      branch-max-lines: 2
+      branch-max-lines: 3
 
 formatters:
   enable:

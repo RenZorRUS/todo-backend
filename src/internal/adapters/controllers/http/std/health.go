@@ -3,19 +3,19 @@ package std
 import (
 	"net/http"
 
-	"github.com/RenZorRUS/todo-backend/src/internal/core/ports/loggers"
-	"github.com/RenZorRUS/todo-backend/src/internal/core/ports/serializers"
+	"github.com/RenZorRUS/todo-backend/src/internal/adapters/errs"
 )
 
 type HealthController struct {
-	rw *ResponseWriter
+	rw JSONResponseWriter
 }
 
-func NewHealthController(
-	log loggers.Logger,
-	serializer serializers.JSONSerializer,
-) *HealthController {
-	return &HealthController{rw: NewResponseWriter(log, serializer)}
+func NewHealthController(rw JSONResponseWriter) (*HealthController, error) {
+	if rw == nil {
+		return nil, errs.ErrJSONResponseWriterNotSpecified
+	}
+
+	return &HealthController{rw: rw}, nil
 }
 
 func (hc *HealthController) Register(appServerMux *http.ServeMux) {

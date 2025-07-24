@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/RenZorRUS/todo-backend/src/internal/adapters/errs"
 	"github.com/RenZorRUS/todo-backend/src/internal/core/domains/configs"
 	"github.com/rs/zerolog"
 )
@@ -14,14 +15,21 @@ type ZerologLogger struct {
 	log *zerolog.Logger
 }
 
-func New(appConfig *configs.AppConfig) *ZerologLogger {
-	logLevel := convertLogLevel(appConfig.LogLevel)
-
-	if appConfig.IsProd {
-		return buildProdLogger(logLevel)
+func NewZerolog(appConfig *configs.AppConfig) (*ZerologLogger, error) {
+	if appConfig == nil {
+		return nil, errs.ErrNilConfig
 	}
 
-	return buildDevLogger(logLevel)
+	logLevel, err := convertLogLevel(appConfig.LogLevel)
+	if err != nil {
+		return nil, err
+	}
+
+	if appConfig.IsProd {
+		return buildProdLogger(logLevel), nil
+	}
+
+	return buildDevLogger(logLevel), nil
 }
 
 func buildDevLogger(logLevel zerolog.Level) *ZerologLogger {
@@ -56,24 +64,24 @@ func buildProdLogger(logLevel zerolog.Level) *ZerologLogger {
 	return &ZerologLogger{log: &log}
 }
 
-func convertLogLevel(logLevel string) zerolog.Level {
+func convertLogLevel(logLevel string) (zerolog.Level, error) {
 	switch strings.ToLower(logLevel) {
 	case "trace":
-		return zerolog.TraceLevel
+		return zerolog.TraceLevel, nil
 	case "debug":
-		return zerolog.DebugLevel
+		return zerolog.DebugLevel, nil
 	case "info":
-		return zerolog.InfoLevel
+		return zerolog.InfoLevel, nil
 	case "warn":
-		return zerolog.WarnLevel
+		return zerolog.WarnLevel, nil
 	case "error":
-		return zerolog.ErrorLevel
+		return zerolog.ErrorLevel, nil
 	case "fatal":
-		return zerolog.FatalLevel
+		return zerolog.FatalLevel, nil
 	case "panic":
-		return zerolog.PanicLevel
+		return zerolog.PanicLevel, nil
 	default:
-		return zerolog.InfoLevel
+		return zerolog.Level(0), errs.ErrUnknownLogLevel
 	}
 }
 

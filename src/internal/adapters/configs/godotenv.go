@@ -7,31 +7,31 @@ import (
 	"github.com/joho/godotenv"
 )
 
-type (
-	GoDotEnvLoader struct{}
-)
+type GoDotEnvLoader struct{}
 
 func NewGoDotEnvLoader() *GoDotEnvLoader {
 	return &GoDotEnvLoader{}
 }
 
-func (loader *GoDotEnvLoader) Load() (*configs.AppConfig, error) {
-	isProd := utils.IsAppInProd()
-	envFilePath := utils.GetEnvFilePath(isProd)
+func (loader *GoDotEnvLoader) Load(appMode string) (*configs.AppConfig, error) {
+	envFilePath, err := utils.GetEnvFilePath(appMode)
+	if err != nil {
+		return nil, err
+	}
 
 	envConfig, err := godotenv.Read(envFilePath)
 	if err != nil {
 		return nil, err
 	}
 
-	return buildAppConfig(isProd, envConfig), nil
+	return buildAppConfig(appMode, envConfig), nil
 }
 
-func buildAppConfig(isProd bool, envConfig EnvConfig) *configs.AppConfig {
+func buildAppConfig(appMode string, envConfig EnvConfig) *configs.AppConfig {
 	return &configs.AppConfig{
 		HTTPServerConfig: buildHTTPServerConfig(envConfig),
 		LogLevel:         envConfig.GetOrDefault(consts.LogLevel, consts.LogLevelDefault),
-		IsProd:           isProd,
+		IsProd:           utils.IsProdMode(appMode),
 	}
 }
 

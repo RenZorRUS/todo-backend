@@ -21,6 +21,7 @@
 | <img src="https://golangci-lint.run/logo.png" alt="Golang CI Logo" width="40"> | [Golangci-lint](https://golangci-lint.run) | Is a fast linters runner for Go. |
 | <img src="https://avatars.githubusercontent.com/u/4092?s=48&v=4" alt="Dotenv Logo" width="40"> | [Godotenv](https://github.com/joho/godotenv) | Loads env vars from a `.env` file |
 | <img src="https://avatars.githubusercontent.com/u/68232?s=48&v=4" alt="Zerolog logo" width="40"> | [Zerolog](https://github.com/rs/zerolog) | A fast and simple logger dedicated to JSON output |
+| <img src="https://avatars.githubusercontent.com/u/1841476?s=48&v=4" alt="Testify logo" width="40"> | [Testify](https://github.com/stretchr/testify) | A framework for writing tests in Go. |
 
 ## 💻 Installation
 

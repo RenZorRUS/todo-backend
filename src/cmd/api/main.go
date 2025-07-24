@@ -4,29 +4,31 @@ import (
 	"log"
 
 	"github.com/RenZorRUS/todo-backend/src/internal/adapters/configs"
+	controllers "github.com/RenZorRUS/todo-backend/src/internal/adapters/controllers/http/std"
 	httpstd "github.com/RenZorRUS/todo-backend/src/internal/adapters/http/std"
 	"github.com/RenZorRUS/todo-backend/src/internal/adapters/loggers"
 	"github.com/RenZorRUS/todo-backend/src/internal/adapters/serializers"
+	"github.com/RenZorRUS/todo-backend/src/internal/utils"
 )
 
 func main() {
+	appMode := utils.GetAppMode()
 	envLoader := configs.NewGoDotEnvLoader()
 
-	appConfig, err := envLoader.Load()
+	appConfig, err := envLoader.Load(appMode)
 	if err != nil {
 		log.Fatal("Failed to load application configuration, ", err.Error())
 	}
 
-	logger := loggers.New(appConfig)
-	errorLog := log.New(logger.GetBaseLogger(), "", 0)
+	logger, _ := loggers.NewZerolog(appConfig)
+	baseLogger := logger.GetBaseLogger()
+	errLog := log.New(baseLogger, "", 0)
 
-	jsonSerializer := serializers.NewJSONSerializer(logger)
-	router := httpstd.BuildAppServerMux(logger, jsonSerializer)
-	server := httpstd.NewHTTPServer(
-		appConfig.HTTPServerConfig,
-		router,
-		errorLog,
-	)
+	json, _ := serializers.NewJSONSerializer(logger)
+	rw, _ := controllers.NewJSONResponseWriter(logger, json)
+
+	router, _ := httpstd.BuildAppServerMux(rw)
+	server, _ := httpstd.NewHTTPServer(appConfig.HTTPServerConfig, router, errLog)
 
 	logger.Fatal(server.Run(), "HTTP server stopped.")
 }

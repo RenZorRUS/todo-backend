@@ -5,24 +5,32 @@ import (
 	"strings"
 
 	"github.com/RenZorRUS/todo-backend/src/internal/adapters/consts"
+	"github.com/RenZorRUS/todo-backend/src/internal/adapters/errs"
 )
 
-func IsAppInProd() bool {
+func GetAppMode() string {
 	appMode, isExist := os.LookupEnv(consts.AppMode)
-
 	if !isExist {
-		return false
+		return consts.DevMode
 	}
 
-	appModeLower := strings.ToLower(appMode)
-
-	return appModeLower == "prod" || appModeLower == "production"
+	return appMode
 }
 
-func GetEnvFilePath(isProd bool) string {
-	if isProd {
-		return ".env.prod"
-	}
+func IsProdMode(appMode string) bool {
+	appModeLower := strings.ToLower(appMode)
+	return appModeLower == consts.ProdMode || appModeLower == "production"
+}
 
-	return ".env"
+func GetEnvFilePath(appMode string) (string, error) {
+	switch strings.ToLower(appMode) {
+	case consts.ProdMode, "production":
+		return consts.ProdEnvFile, nil
+	case consts.DevMode, "development":
+		return consts.DevEnvFile, nil
+	case consts.TestMode:
+		return consts.TestEnvFile, nil
+	default:
+		return "", errs.ErrUnknownAppMode
+	}
 }
