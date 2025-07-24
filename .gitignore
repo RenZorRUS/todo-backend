@@ -14,7 +14,9 @@ bin/
 
 # Code coverage profiles and other test artifacts
 *.out
+cover.*
 coverage.*
+coverage/
 *.coverprofile
 profile.cov
 
@@ -26,8 +28,8 @@ go.work
 go.work.sum
 
 # Env file
-.env
 .env.prod
+.env
 
 # Editor/IDE
 .idea/

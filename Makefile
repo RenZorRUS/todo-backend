@@ -8,6 +8,7 @@ OS := $(shell uname -s 2>/dev/null || echo Windows)
 
 # Paths to local `bin` project directory
 DEV_BIN     := $(CURDIR)/bin
+DEV_TOOLS_PATHS := $(DEV_BIN)/pre-commit $(DEV_BIN)/golangci-lint $(DEV_BIN)/upx
 export PATH := $(DEV_BIN):$(PATH)
 
 # Values for running app in production
@@ -16,6 +17,10 @@ MAIN_DIR     := ./src/cmd/api
 BUILD_DIR    := ./bin
 DOCKER_IMAGE := todo-backend:latest
 BINARY_PATH  := $(BUILD_DIR)/$(BINARY_NAME)
+
+# Testing values
+COVERAGE_DIR := ./coverage
+COVERAGE_EXCLUDE := $(shell go list ./... | grep -E 'domains|ports|consts|cmd|tests|errs')
 
 # Go build flags
 GOFLAGS     := -ldflags="-s -w"
@@ -37,16 +42,19 @@ endif
 .PHONY: help
 help:
 	@echo "Usage:"
-	@echo "  make build              - 🚀 builds binary executable: $(BINARY_PATH) from: $(MAIN_DIR)"
-	@echo "  make run                - 🔥 runs binary executable: $(BINARY_PATH)"
 	@echo "  make dev-tools-install  - ⬇️  installs pre-commit & golangci-lint"
+	@echo "  make pre-commit-install - ⚙️  set up pre-commit hooks in your local .git directory"
+	@echo "  make clean-dev-tools    - 🚮 removes development tools"
+	@echo "  make check              - 🔎 checks if all development tools are installed"
 	@echo "  make lint               - 🔥 runs Golang linters according to rules in .golangci.yaml"
-	@echo "  make audit              - 🔥 runs Golang linters and others quality checks"
 	@echo "  make fmt                - 🧹 formats Golang code according to rules in .golangci.yaml"
 	@echo "  make tidy               - 🧹 checks, cleans and updates go.mod and go.sum files"
-	@echo "  make clean-dev-tools.   - 🚮 removes development tools"
-	@echo "  make pre-commit-install - ⚙️  set up pre-commit hooks in your local .git directory"
-	@echo "  make check              - 🔎 checks if all development tools are installed"
+	@echo "  make audit              - 🔥 runs Golang linters and others quality checks"
+	@echo "  make unit-test          - 🧪 runs unit tests and creates coverage report in $(COVERAGE_DIR)"
+	@echo "  make clean              - 🚮 removes binary executable: $(BINARY_PATH)"
+	@echo "  make prod-linux-amd64   - 🚀 builds binary executable: $(BINARY_PATH)-linux-amd64 from: $(MAIN_DIR)"
+	@echo "  make build              - 🚀 builds binary executable: $(BINARY_PATH) from: $(MAIN_DIR)"
+	@echo "  make run                - 🔥 runs binary executable: $(BINARY_PATH)"
 
 # Pre-commit installation target
 $(DEV_BIN)/pre-commit:
@@ -99,13 +107,13 @@ endif
 
 # Development tools installation
 .PHONY: dev-tools-install pre-commit-install clean-dev-tools check
-dev-tools-install: $(DEV_BIN)/pre-commit $(DEV_BIN)/golangci-lint $(DEV_BIN)/upx
+dev-tools-install: $(DEV_TOOLS_PATHS)
 
 pre-commit-install: $(DEV_BIN)/pre-commit
 	@pre-commit install
 
 clean-dev-tools:
-	@rm -rf $(DEV_BIN)
+	@rm $(DEV_TOOLS_PATHS)
 
 check: dev-tools-install pre-commit-install lint
 	@echo "✅ All development tools are installed!"
@@ -122,10 +130,16 @@ tidy: fmt
 	@go mod tidy -v -x
 
 # Quality checks
-.PHONY: audit
+.PHONY: audit unit-tests
 audit: fmt lint tidy
-	@go vet $(MAIN_DIR)
+	@go vet ./...
 	@go mod verify
+
+unit-tests:
+	@mkdir -p $(COVERAGE_DIR)
+	@go test -race -coverprofile=$(COVERAGE_DIR)/cover.out \
+		$(filter-out $(COVERAGE_EXCLUDE),$(shell go list ./...))
+	@go tool cover -html=$(COVERAGE_DIR)/cover.out -o $(COVERAGE_DIR)/cover.html
 
 # Go binary builders
 .PHONY: clean prod-linux-amd64 build run

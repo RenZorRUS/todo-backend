@@ -28,4 +28,14 @@ const (
 	WriteTimeout      = 30 * time.Second
 	IdleTimeout       = 120 * time.Second
 	MaxHeaderBytes    = 1 << 20
+
+	// Environment file names.
+	DevEnvFile  = ".env"
+	ProdEnvFile = ".env.prod"
+	TestEnvFile = ".env.test"
+
+	// App modes.
+	DevMode  = "dev"
+	ProdMode = "prod"
+	TestMode = "test"
 )

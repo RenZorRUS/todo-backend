@@ -18,3 +18,12 @@ repos:
       - id: golangci-lint-config-verify
       - id: golangci-lint-fmt
       - id: golangci-lint-full
+  - repo: local
+    hooks:
+      - id: go-unit-tests
+        name: go-unit-tests
+        entry: make unit-tests
+        language: system
+        pass_filenames: false
+        always_run: true
+        files: \.go$
