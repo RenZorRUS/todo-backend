@@ -1,0 +1,51 @@
+# Docs: https://docs.docker.com/reference/compose-file/
+
+name: todo-backend
+
+services:
+  app:
+    build:
+      context: ./..
+      dockerfile: build/Dockerfile
+    cpu_count: 1
+    container_name: todo-app
+    depends_on:
+      database:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8081/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - db-net
+    restart: on-failure:3
+    ports:
+      - 8081:8081
+  database:
+    cpu_count: 1
+    container_name: postgres
+    healthcheck:
+      test: [
+        "CMD-SHELL",
+        "psql --username=postgres --dbname=postgres --command='SELECT 1' || exit 1"
+      ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - db-net
+    image: postgres:17.5-alpine3.22
+    restart: on-failure:3
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+    volumes:
+      - ./.volumes/postgres:/var/lib/postgresql/data
+
+networks:
+  db-net:
+    name: db-net

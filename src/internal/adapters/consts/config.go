@@ -11,7 +11,7 @@ const (
 
 	// Default values.
 	HTTPServerPortDefault = "8081"
-	HTTPServerHostDefault = "127.0.0.1"
+	HTTPServerHostDefault = "0.0.0.0"
 	LogLevelDefault       = "info"
 
 	/* HTTP Server values:
@@ -30,9 +30,9 @@ const (
 	MaxHeaderBytes    = 1 << 20
 
 	// Environment file names.
-	DevEnvFile  = ".env"
-	ProdEnvFile = ".env.prod"
-	TestEnvFile = ".env.test"
+	DevEnvFile  = "./.env"
+	ProdEnvFile = "./.env.prod"
+	TestEnvFile = "./.env.test"
 
 	// App modes.
 	DevMode  = "dev"

@@ -25,14 +25,11 @@ vendor/
 
 # Docker
 .volumes
+build/
 
 # Go workspace file
 go.work
 go.work.sum
-
-# Env file
-.env.prod
-.env
 
 # Editor/IDE
 .idea/
@@ -40,3 +37,6 @@ go.work.sum
 
 # macOS
 .DS_Store
+
+# Git
+.git
