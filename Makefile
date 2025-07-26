@@ -15,7 +15,6 @@ export PATH := $(DEV_BIN):$(PATH)
 BINARY_NAME  := todo-backend
 MAIN_DIR     := ./src/cmd/api
 BUILD_DIR    := ./bin
-DOCKER_IMAGE := todo-backend:latest
 BINARY_PATH  := $(BUILD_DIR)/$(BINARY_NAME)
 
 # Testing values
@@ -142,9 +141,14 @@ unit-tests:
 	@go tool cover -html=$(COVERAGE_DIR)/cover.out -o $(COVERAGE_DIR)/cover.html
 
 # Go binary builders
-.PHONY: clean prod-linux-amd64 build run
+.PHONY: clean prod prod-linux-amd64 build run
 clean:
 	@rm -f $(BINARY_PATH) $(BINARY_PATH)-linux-amd64
+
+prod: clean
+	CGO_ENABLED=$(CGO_ENABLED) \
+		go build $(GOFLAGS) -o $(BINARY_PATH) $(MAIN_DIR)
+	@upx -9 $(BINARY_PATH)
 
 prod-linux-amd64: clean
 	@GOOS=linux GOARCH=amd64 CGO_ENABLED=$(CGO_ENABLED) \

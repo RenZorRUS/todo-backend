@@ -22,6 +22,11 @@
 | <img src="https://avatars.githubusercontent.com/u/4092?s=48&v=4" alt="Dotenv Logo" width="40"> | [Godotenv](https://github.com/joho/godotenv) | Loads env vars from a `.env` file |
 | <img src="https://avatars.githubusercontent.com/u/68232?s=48&v=4" alt="Zerolog logo" width="40"> | [Zerolog](https://github.com/rs/zerolog) | A fast and simple logger dedicated to JSON output |
 | <img src="https://avatars.githubusercontent.com/u/1841476?s=48&v=4" alt="Testify logo" width="40"> | [Testify](https://github.com/stretchr/testify) | A framework for writing tests in Go. |
+| <img src="https://miro.medium.com/v2/resize:fit:700/1*s8I4jBW2KKP687LqWh3OtQ.png" alt="Docker Compose logo" width="40"> | [Docker Compose](https://docs.docker.com/compose/) | Is a tool for defining and running multi-container apps. |
+| <img src="https://img.icons8.com/fluent/512/docker.png" alt="Docker logo" width="40"> | [Docker](https://docs.docker.com/engine/) | Is an open source containerization technology for building and containerizing your apps |
+| <img src="https://github.com/pressly/goose/raw/main/assets/goose_logo.png" alt="Goose logo" style="width: 50px;"> | [Goose](https://pkg.go.dev/github.com/pressly/goose/v3#section-readme) | Is a database migration tool. Both a CLI and a library |
+| <img src="https://avatars.githubusercontent.com/u/94130?s=48&v=4" alt="pgx" style="width: 50px;"> | [Pgx](https://github.com/jackc/pgx#pgx---postgresql-driver-and-toolkit) | Is a pure Go driver and toolkit for PostgreSQL. |
+| <img src="https://static-00.iconduck.com/assets.00/postgresql-icon-1987x2048-v2fkmdaw.png" alt="Postgres logo" style="width: 50px;"> | [Postgres](https://www.postgresql.org) | Open source object-relational database system |
 
 ## 💻 Installation
 
@@ -40,6 +45,28 @@ To install the **To-Do Backend App**, follow these steps:
 
     ```bash
     cd todo-backend
+    ```
+
+## 🔥 Launching
+
+The **To-Do Backend App** uses [Docker Compose](https://docs.docker.com/reference/cli/docker/compose/) to manage all its dependencies (e.g., database, cache) configured in the `build/docker-compose.yaml` file and run them in separate [docker containers](https://www.docker.com/resources/what-container/):
+
+1. To build and run those containers, run the following command:
+
+    ```bash
+    docker compose --file=build/docker-compose.yaml up --detach
+    ```
+
+2. To stop and remove containers, networks, volumes, and images created by `up`, use the following command.
+
+    ```bash
+    docker compose --file=build/docker-compose.yaml down
+    ```
+
+3. To list containers for a Docker Compose project, with current status and exposed ports, run the following command:
+
+    ```bash
+    docker compose ps --all
     ```
 
 ## 🧑‍💻 For Maintainers
