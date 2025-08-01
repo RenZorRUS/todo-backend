@@ -76,6 +76,7 @@ func buildHTTPServer(t *testing.T) *HTTPServer {
 	t.Helper()
 
 	appConfig := &configs.AppConfig{
+		DBConfig: &configs.DBConfig{}, //nolint:exhaustruct // fill DBConfig structure.
 		HTTPServerConfig: &configs.HTTPServerConfig{
 			Port: consts.HTTPServerPortDefault,
 			Host: consts.HTTPServerHostDefault,

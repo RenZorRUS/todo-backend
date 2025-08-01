@@ -40,6 +40,9 @@ Before you start contributing to the To-Do Backend App, please make sure you hav
   - Install `pre-commit` using `make check` command
     - (Or) install `pre-commit` according to the [installation instructions](https://paolozaino.wordpress.com/2023/12/15/software-development-installing-pre-commit-to-check-our-code-repositories-and-improve-consistency-across-teams/)
     - Next, execute `make pre-commit-install` to set up the `pre-commit` hooks in your local `.git` repository
+- [Upx](https://upx.github.io) (an advanced executable file compressor)
+- [Goose](https://pressly.github.io/goose/) (a database migration tool)
+- [Sqlc](https://docs.sqlc.dev/en/stable/index.html) (generates fully type-safe idiomatic Go code from SQL)
 - [Docker](https://www.docker.com) (a containerization platform)
 - [Docker Compose](https://docs.docker.com/compose/) (a tool for defining and running multi-container Docker applications)
 
@@ -210,38 +213,96 @@ A brief explanation of the image tags:
       docker rm todo-app
       ```
 
+### 💾 Database
+
+The **To-Do Backend App** uses [PostgreSQL](https://www.postgresql.org) as its database management system.
+
+The current database diagram is shown below:
+
+![Database Diagram](./static/db-diagram.png)
+
+> **NOTE:** Database diagram is generated using [ChartDB](https://chartdb.io)
+
 ### 💾 Database migrations
 
-Database migrations are managed using [Goose](https://pkg.go.dev/github.com/pressly/goose/v3) command-line tool:
+The **To-Do Backend App** uses the [Goose](https://github.com/pressly/goose) package to manage database migrations.
 
 1. To create a new migration (with `.sql` extension), run the following command:
 
     ```bash
     # env_file_name: path to the `.env` file
     # migration_name: name of the new migration
-    go tool goose -env <env_file_name> -s <migration_name> sql
+    goose -env <env_file_name> -s create <migration_name> sql
     ```
 
 2. To run migrations (i.e. update the database to the most recent version available), run the following command:
 
     ```bash
-    go tool goose -env <env_file_name> up
+    goose -env <env_file_name> up
     ```
 
 3. To rollback migrations (i.e. return the database to the previous version), run the following command:
 
     ```bash
     # Roll back the version by 1
-    go tool goose -env <env_file_name> down
+    goose -env <env_file_name> down
     # Roll back all migrations
-    go tool goose -env <env_file_name> reset
+    goose -env <env_file_name> reset
     ```
 
 4. To list applied migrations and their statuses, run the following command:
 
     ```bash
-    go tool goose -env <env_file_name> status
+    goose -env <env_file_name> status
     ```
+
+## ⚙️ Sql to Go code generation
+
+[sqlc](https://docs.sqlc.dev/en/stable/index.html) generates fully type-safe idiomatic Go code from SQL.
+
+Here’s how it works:
+
+1. You write SQL queries in files with `.sql` extension
+2. You run `sqlc` to generate Go code that presents type-safe interfaces to those queries
+3. You write app code that calls the methods `sqlc` generated
+
+> **NOTE:** The `sqlc.yaml` file contains the configuration for `sqlc`.
+>
+> - The `schema` field specifies the directory containing SQL migration files, and `sqlc` has support for parsing `goose` migrations (more details are available in the [documentation](https://docs.sqlc.dev/en/latest/howto/ddl.html#goose)).
+
+### ⚙️ Go Code Genereation
+
+Execute the following command to generate Go code from SQL scripts located in the `src/internal/adapters/databases/postgres/queries` directory:
+
+```bash
+DB_USER=postgres DB_PASSWORD=postgres DB_HOST=0.0.0.0 DB_PORT=5432 DB_NAME=postgres DB_SSL_MODE=disable sqlc generate
+```
+
+By default, `sqlc` runs its analysis using a built-in query analysis engine.
+
+- While fast, this engine can’t handle some complex queries and type-inference.
+- That's why we configure `sqlc` to use our own database for enhanced analysis using metadata from it.
+- Database-backed analysis is configured in the `sqlc.yaml` by the following fields:
+
+  ```yaml
+  database:
+    managed: false
+    uri: postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=${DB_SSL_MODE}
+  ```
+
+### 🔎 Queries Checking and Linting
+
+To perform static analysis of SQL queries for syntax and type errors, use the following command:
+
+```bash
+DB_USER=postgres DB_PASSWORD=postgres DB_HOST=0.0.0.0 DB_PORT=5432 DB_NAME=postgres DB_SSL_MODE=disable sqlc compile
+```
+
+To lints queries using rules (ex: `postgresql-no-delete-without-where` or `postgresql-no-update-without-where`) defined in the `sqlc.yaml` configuration file, use the following command:
+
+```bash
+DB_USER=postgres DB_PASSWORD=postgres DB_HOST=0.0.0.0 DB_PORT=5432 DB_NAME=postgres DB_SSL_MODE=disable sqlc vet
+```
 
 ## References
 

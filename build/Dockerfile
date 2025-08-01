@@ -9,8 +9,10 @@ FROM base AS builder
 WORKDIR /build
 # Update the package list and install make
 RUN apk update \
+    && apk upgrade \
     && apk add --no-cache make \
-    && apk add --no-cache upx
+    && apk add --no-cache upx \
+    && apk add --no-cache curl
 # Copy the go.mod and go.sum files to the /build directory
 COPY go.mod go.sum ./
 # Install dependencies
@@ -27,11 +29,26 @@ RUN make prod
 FROM base AS production
 # Move to working directory /prod
 WORKDIR /prod
-# Update the package list and install curl
-RUN apk update && apk add --no-cache curl
+# Copy curl from builder stage for healthcheck
+COPY --from=builder /usr/bin/curl /usr/bin/curl
+COPY --from=builder \
+    /usr/lib/libbrotlicommon* \
+    /usr/lib/libunistring* \
+    /usr/lib/libbrotlidec* \
+    /usr/lib/libzstd* \
+    /usr/lib/libpsl* \
+    /usr/lib/libidn2* \
+    /usr/lib/libnghttp2* \
+    /usr/lib/libcares* \
+    /usr/lib/libcurl* \
+    /usr/lib/
 # Copy binary from builder stage
-COPY --from=builder /build/bin/todo-backend ./
-COPY --from=builder /build/.env ./
+COPY --from=builder \
+    /build/bin/todo-backend \
+    /build/.env.prod \
+    /prod/
+# Set the environment variable
+ENV APP_MODE=prod
 # Document the port that may need to be published
 EXPOSE 8081
 # Start the application

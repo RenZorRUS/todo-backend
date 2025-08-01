@@ -43,6 +43,7 @@ func buildDevLogger(logLevel zerolog.Level) *ZerologLogger {
 		Level(logLevel).
 		With().
 		Timestamp().
+		Caller().
 		Int("pid", os.Getpid()).
 		Str("v", buildInfo.GoVersion).
 		Logger()
@@ -57,7 +58,6 @@ func buildProdLogger(logLevel zerolog.Level) *ZerologLogger {
 		Level(logLevel).
 		With().
 		Timestamp().
-		Caller().
 		Str("v", buildInfo.GoVersion).
 		Logger()
 

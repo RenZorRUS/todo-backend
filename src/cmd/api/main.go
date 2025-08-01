@@ -5,6 +5,7 @@ import (
 
 	"github.com/RenZorRUS/todo-backend/src/internal/adapters/configs"
 	controllers "github.com/RenZorRUS/todo-backend/src/internal/adapters/controllers/http/std"
+	// "github.com/RenZorRUS/todo-backend/src/internal/adapters/databases/postgres/driver".
 	httpstd "github.com/RenZorRUS/todo-backend/src/internal/adapters/http/std"
 	"github.com/RenZorRUS/todo-backend/src/internal/adapters/loggers"
 	"github.com/RenZorRUS/todo-backend/src/internal/adapters/serializers"
@@ -26,6 +27,8 @@ func main() {
 
 	json, _ := serializers.NewJSONSerializer(logger)
 	rw, _ := controllers.NewJSONResponseWriter(logger, json)
+
+	// dbPool, err := driver.NewPgxPool(appConfig.DBConfig)
 
 	router, _ := httpstd.BuildAppServerMux(rw)
 	server, _ := httpstd.NewHTTPServer(appConfig.HTTPServerConfig, router, errLog)

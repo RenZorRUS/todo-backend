@@ -1,0 +1,307 @@
+# Docs: https://docs.sqlc.dev/en/stable/reference/config.html
+
+version: "2"
+
+sql:
+  - engine: postgresql
+    name: postgres
+    schema: ../src/internal/adapters/databases/postgres/migrations
+    queries: ../src/internal/adapters/databases/postgres/queries
+    gen:
+      go:
+        package: dbsqlc
+        out: ../src/internal/adapters/databases/postgres/generated
+        sql_package: pgx/v5
+        sql_driver: github.com/jackc/pgx/v5
+        emit_db_tags: true
+        # pgx/v5 already supports prepared statements implicitly.
+        emit_prepared_queries: false
+        # Facilitating dependency injection and testing.
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_exported_queries: true
+        emit_json_tags: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: true
+        emit_methods_with_db_argument: false
+        # Only supported for PostgreSQL if sql_package is pgx/v5
+        emit_pointers_for_null_types: true
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+        emit_sql_as_comment: true
+        initialisms:
+          - id
+          - user_id
+        json_tags_id_uppercase: false
+        json_tags_case_style: camel
+        omit_unused_structs: true
+        output_files_suffix: .gen.go
+        query_parameter_limit: 1
+        overrides:
+          - column: tasks.id
+            go_type: uint64
+          - column: tasks.user_id
+            go_type: uint64
+          - column: tasks.status
+            go_type: github.com/RenZorRUS/todo-backend/src/internal/core/domains/models.TaskStatus
+          - column: users.id
+            go_type: uint64
+          - db_type: "pg_catalog.timestamp"
+            nullable: true
+            go_type:
+              import: "time"
+              type: "Time"
+              pointer: true
+          - db_type: "pg_catalog.timestamp"
+            go_type: "time.Time"
+    database:
+      managed: false
+      uri: postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=${DB_SSL_MODE}
+    analyzer:
+      database: true
+    strict_function_checks: true
+    strict_order_by: true
+    rules:
+      - sqlc/db-prepare
+      - postgresql-no-delete-without-where
+      - postgresql-no-update-without-where
+      - postgresql-no-select-star
+      - postgresql-query-too-costly
+      - postgresql-no-offset-without-limit
+      - postgresql-no-varchar-without-limit
+      - postgresql-no-nullable-unique-index
+      - postgresql-no-timestamp-without-timezone
+      - postgresql-no-enum-comparison
+      - postgresql-no-seq-scan
+      - postgresql-n-plus-one-risk
+      - postgresql-insert-without-returning
+      - postgresql-upsert-without-conflict-target
+      - postgresql-lock-too-strong
+      - postgresql-no-raw-string-concat
+      - postgresql-consistent-naming
+      - postgresql-no-hard-coded-ids
+      - postgresql-limit-without-order
+      - postgresql-nullable-boolean
+      - postgresql-uuid-default-gen
+      - postgresql-text-without-check
+      - postgresql-no-drop-column
+      - postgresql-no-add-not-null
+      - postgresql-no-raw-lock
+      - postgresql-slow-count-star
+      - postgresql-too-wide-index
+      - postgresql-cte-scan-warning
+      - postgresql-dynamic-sql-suspect
+      - postgresql-superuser-operation
+      - postgresql-long-transaction
+      - postgresql-breaking-type-change
+      - postgresql-concurrent-index-unsafe
+      - postgresql-large-offset
+      - postgresql-insert-many-rows
+      - postgresql-extension-uuid-ossp
+      - postgresql-view-materialized-refresh
+
+rules:
+  - name: postgresql-no-delete-without-where
+    message: "DELETE must have a WHERE clause"
+    rule: |
+      query.sql.contains("DELETE") && !query.sql.contains("WHERE")
+
+  - name: postgresql-no-update-without-where
+    message: "UPDATE must have a WHERE clause"
+    rule: |
+      query.sql.contains("UPDATE") && !query.sql.contains("WHERE")
+
+  - name: postgresql-no-select-star
+    message: "Avoid SELECT *; list columns explicitly"
+    rule: |
+      query.sql.contains("SELECT *")
+
+  - name: postgresql-query-too-costly
+    message: "Query cost estimate is too high"
+    rule: |
+      postgresql.explain.plan.total_cost > 1000.0
+
+  - name: postgresql-no-offset-without-limit
+    message: "OFFSET must be accompanied by LIMIT"
+    rule: |
+      query.sql.contains("OFFSET") && !query.sql.contains("LIMIT")
+
+  - name: postgresql-no-varchar-without-limit
+    message: "VARCHAR columns must specify length"
+    rule: |
+      query.sql.contains("VARCHAR") && !query.sql.matches(r'VARCHAR\(\d+\)')
+
+  - name: postgresql-no-nullable-unique-index
+    message: "Unique index should not contain nullable columns"
+    rule: |
+      query.sql.matches(r'CREATE\s+UNIQUE\s+INDEX') && query.sql.contains("NULL")
+
+  - name: postgresql-no-timestamp-without-timezone
+    message: "Use TIMESTAMPTZ instead of TIMESTAMP"
+    rule: |
+      query.sql.matches(r'\bTIMESTAMP\b') && !query.sql.matches(r'\bTIMESTAMPTZ\b')
+
+  - name: postgresql-no-enum-comparison
+    message: "Compare enums with explicit cast, not strings"
+    rule: |
+      query.sql.contains("enum_column = '") || query.sql.contains('enum_column = "')
+
+  # ----- Performance & Best-practice rules -----
+  - name: postgresql-no-seq-scan
+    message: "Query forces a sequential scan; add an index"
+    rule: |
+      postgresql.explain.plan.node_type == "Seq Scan"
+
+  - name: postgresql-n-plus-one-risk
+    message: "Potential N+1: query uses IN (…) with a single parameter"
+    rule: |
+      query.cmd == "many" &&
+      query.sql.matches(r'IN\s*\(\s*\$1\b')
+
+  - name: postgresql-insert-without-returning
+    message: "INSERT should use RETURNING clause for generated IDs"
+    rule: |
+      query.sql.contains("INSERT") && !query.sql.contains("RETURNING")
+
+  - name: postgresql-upsert-without-conflict-target
+    message: "ON CONFLICT must specify conflict target"
+    rule: |
+      query.sql.contains("ON CONFLICT") && !query.sql.matches(r'ON\s+CONFLICT\s+\(')
+
+  - name: postgresql-lock-too-strong
+    message: "SELECT ... FOR UPDATE should be scoped to rows only"
+    rule: |
+      query.sql.matches(r'FOR\s+UPDATE\b') && !query.sql.matches(r'FOR\s+UPDATE\s+OF\b')
+
+  # ----- Security rules -----
+  - name: postgresql-no-raw-string-concat
+    message: "Possible SQL injection via string concatenation"
+    rule: |
+      query.sql.matches(r'\|\||\+')
+
+  # ----- Style / maintainability rules -----
+  - name: postgresql-consistent-naming
+    message: "Column names should be snake_case"
+    rule: |
+      query.sql.matches(r'"\w*[A-Z]\w*"')
+
+  - name: postgresql-no-hard-coded-ids
+    message: "Avoid hard-coded IDs in queries"
+    rule: |
+      query.sql.matches(r'(WHERE|VALUES)\s*\(\s*\d+\s*\)')
+
+  - name: postgresql-limit-without-order
+    message: "LIMIT without ORDER BY yields non-deterministic results"
+    rule: |
+      query.cmd == "many" &&
+      query.sql.contains("LIMIT") &&
+      !query.sql.contains("ORDER BY")
+
+  # ----- Data-integrity rules -----
+  - name: postgresql-nullable-boolean
+    message: "Add NOT NULL to BOOLEAN columns (static reminder)"
+    rule: |
+      query.sql.matches(r'boolean\s*\)\s*,?\s*$') && !query.sql.matches(r'NOT\s+NULL')
+
+  - name: postgresql-uuid-default-gen
+    message: "Add DEFAULT gen_random_uuid() to UUID columns"
+    rule: |
+      query.sql.matches(r'uuid\s*[,)]') && !query.sql.matches(r'gen_random_uuid')
+
+  - name: postgresql-text-without-check
+    message: "TEXT column should have CHECK (char_length(...) <= N) or VARCHAR(n)"
+    rule: |
+      query.sql.matches(r'\bTEXT\b') && !query.sql.matches(r'CHECK.*char_length')
+
+  # ----- Migration / DDL safety rules -----
+  - name: postgresql-no-drop-column
+    message: "Dropping a column is a breaking change"
+    rule: |
+      query.sql.matches(r'ALTER\s+.*\s+DROP\s+COLUMN')
+
+  - name: postgresql-no-add-not-null
+    message: "New NOT NULL column must have DEFAULT or be added in two steps"
+    rule: |
+      query.sql.matches(r'ALTER\s+.*\s+ADD\s+.*\s+NOT\s+NULL') &&
+      !query.sql.matches(r'DEFAULT')
+
+  - name: postgresql-no-raw-lock
+    message: "Avoid explicit LOCK TABLE; use migrations with retries"
+    rule: |
+      query.sql.matches(r'\bLOCK\s+TABLE\b')
+
+  # ----- Observability rules -----
+  - name: postgresql-slow-count-star
+    message: "COUNT(*) without WHERE or LIMIT may be slow on large tables"
+    rule: |
+      query.sql.matches(r'COUNT\s*\(\s*\*\s*\)') &&
+      !query.sql.contains("WHERE") && !query.sql.contains("LIMIT")
+
+  # ----- Advanced runtime / correctness rules -----
+  - name: postgresql-too-wide-index
+    message: "Avoid > 3-column composite indexes; verify necessity"
+    rule: |
+      query.sql.matches(r'CREATE\s+INDEX.*\(([^,)]+,){3,}')
+
+  - name: postgresql-cte-scan-warning
+    message: "Large CTE detected; check if it should be indexed or rewritten"
+    rule: |
+      query.sql.matches(r'\bWITH\b') && query.cmd == "many"
+
+  # ----- Security / injection hygiene -----
+  - name: postgresql-dynamic-sql-suspect
+    message: "Dynamic SQL via EXECUTE or FORMAT detected"
+    rule: |
+      query.sql.matches(r'EXECUTE\s+|FORMAT\s*\(')
+
+  - name: postgresql-superuser-operation
+    message: "Avoid GRANT / REVOKE in application code"
+    rule: |
+      query.sql.matches(r'\bGRANT\b|\bREVOKE\b')
+
+  # ----- Connection / transaction rules -----
+  - name: postgresql-long-transaction
+    message: "Avoid large writes or slow queries inside explicit transactions"
+    rule: |
+      query.sql.matches(r'\bBEGIN\b') && (
+        query.sql.matches(r'UPDATE.*SET.*SELECT') ||
+        query.sql.matches(r'INSERT.*SELECT.*FROM')
+      )
+
+  # ----- Versioning / migration rules -----
+  - name: postgresql-breaking-type-change
+    message: "Column type change detected; ensure backward compatibility"
+    rule: |
+      query.sql.matches(r'ALTER\s+.*\s+TYPE')
+
+  - name: postgresql-concurrent-index-unsafe
+    message: "CREATE INDEX should use CONCURRENTLY in production"
+    rule: |
+      query.sql.matches(r'CREATE\s+INDEX') &&
+      !query.sql.contains("CONCURRENTLY")
+
+  # ----- Observability (slow / large) rules -----
+  - name: postgresql-large-offset
+    message: "OFFSET followed by 4-or-more-digit number; consider keyset pagination"
+    rule:  |
+      query.sql.matches(r'OFFSET\s+\d{4,}\b')
+
+  - name: postgresql-insert-many-rows
+    message: "INSERT VALUES list looks large (> 1000 rows); consider COPY or batching"
+    rule: |
+      query.cmd == "exec" &&
+      query.sql.matches(r'INSERT.*VALUES\s*\([^)]+\),\s*\([^)]+\),\s*\([^)]+\),\s*\([^)]+\)')
+
+  # ----- Extension / feature usage rules -----
+  - name: postgresql-extension-uuid-ossp
+    message: "Use gen_random_uuid() instead of uuid-ossp extension"
+    rule: |
+      query.sql.matches(r'uuid_generate_v')
+
+  # ----- Naming & style (advanced) -----
+  - name: postgresql-view-materialized-refresh
+    message: "Materialized view should be refreshed CONCURRENTLY"
+    rule: |
+      query.sql.matches(r'REFRESH\s+MATERIALIZED\s+VIEW') &&
+      !query.sql.contains("CONCURRENTLY")
